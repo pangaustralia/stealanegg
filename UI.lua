@@ -63,7 +63,7 @@ ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = Toggle
 
 local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(200, 200, 220)
+ToggleStroke.Color = Color3.fromRGB(170, 80, 255)
 ToggleStroke.Thickness = 1.5
 ToggleStroke.Transparency = 0.2
 ToggleStroke.Parent = Toggle
@@ -94,7 +94,7 @@ MainCorner.CornerRadius = UDim.new(0, 0)
 MainCorner.Parent = Main
 
 local MainBorder = Instance.new("UIStroke")
-MainBorder.Color = Color3.fromRGB(200, 200, 220)
+MainBorder.Color = Color3.fromRGB(170, 80, 255)
 MainBorder.Thickness = 2
 MainBorder.Transparency = 0.1
 MainBorder.Parent = Main
@@ -113,8 +113,8 @@ TopBar.Parent = Main
 
 local TopGradient = Instance.new("UIGradient")
 TopGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(36, 38, 53)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 23, 30))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(65, 30, 95)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 35))
 })
 TopGradient.Parent = TopBar
 
@@ -122,7 +122,7 @@ local TopLine = Instance.new("Frame")
 TopLine.Name = "TopLine"
 TopLine.Size = UDim2.new(1, 0, 0, 2)
 TopLine.Position = UDim2.new(0, 0, 1, -2)
-TopLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
+TopLine.BackgroundColor3 = Color3.fromRGB(170, 80, 255)
 TopLine.BackgroundTransparency = 0.2
 TopLine.BorderSizePixel = 0
 TopLine.ZIndex = 22
@@ -170,7 +170,7 @@ local SidebarLine = Instance.new("Frame")
 SidebarLine.Name = "SidebarLine"
 SidebarLine.Size = UDim2.new(0, 2, 1, 0)
 SidebarLine.Position = UDim2.new(1, -2, 0, 0)
-SidebarLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
+SidebarLine.BackgroundColor3 = Color3.fromRGB(170, 80, 255)
 SidebarLine.BackgroundTransparency = 0.15
 SidebarLine.BorderSizePixel = 0
 SidebarLine.ZIndex = 6
