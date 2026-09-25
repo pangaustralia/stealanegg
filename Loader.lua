@@ -4,7 +4,7 @@
 -- ✅ VIPTP ជំនួស EggCheckPremium
 -- ==================================================
 
-local BASE_URL = ""
+local BASE_URL = "https://raw.githubusercontent.com/pangaustralia/stealanegg/main/"
 
 _G.YOKUDO_EnablePrint = false
 
