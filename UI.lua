@@ -97,7 +97,6 @@ Main.ClipsDescendants = true
 Main.Active = true
 Main.ZIndex = 1
 Main.Parent = ScreenGui
-
 -- ==================================================
 -- BACKGROUND IMAGE
 -- ==================================================
@@ -108,19 +107,18 @@ Background.Position = UDim2.new(0, 0, 0, 0)
 Background.BackgroundTransparency = 1
 Background.BorderSizePixel = 0
 
--- Your background image
+-- Background image
 Background.Image = "rbxassetid://127094648833500"
 
--- Adjust this if you want the image lighter/darker
+-- Make image clearly visible
 Background.ImageTransparency = 0
 
--- Crop image to fit the GUI
+-- Fill the whole UI
 Background.ScaleType = Enum.ScaleType.Crop
 
--- Keep image behind all UI elements
-Background.ZIndex = 0
+-- IMPORTANT: put background behind the panels
+Background.ZIndex = 1
 Background.Parent = Main
-
 -- ==================================================
 -- MAIN BORDER
 -- ==================================================
@@ -137,7 +135,7 @@ local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 58)
 TopBar.BackgroundColor3 = Theme.TopBar
-TopBar.BackgroundTransparency = 0.08
+TopBar.BackgroundTransparency = 0.20
 TopBar.BorderSizePixel = 0
 TopBar.Active = true
 TopBar.ZIndex = 20
@@ -207,7 +205,7 @@ Sidebar.Position = UDim2.new(0, 0, 0, 58)
 
 -- Purple-tinted transparent sidebar
 Sidebar.BackgroundColor3 = Theme.Sidebar
-Sidebar.BackgroundTransparency = 0.45
+Sidebar.BackgroundTransparency = 0.65
 
 Sidebar.BorderSizePixel = 0
 Sidebar.ZIndex = 5
@@ -269,7 +267,7 @@ Content.Position = UDim2.new(
 
 -- Transparent purple-tinted content
 Content.BackgroundColor3 = Theme.Background
-Content.BackgroundTransparency = 0.50
+Content.BackgroundTransparency = 0.65
 
 Content.BorderSizePixel = 0
 Content.ZIndex = 5
