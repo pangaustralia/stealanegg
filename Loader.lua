@@ -4,7 +4,7 @@
 -- ✅ VIPTP ជំនួស EggCheckPremium
 -- ==================================================
 
-local BASE_URL = "https://raw.githubusercontent.com/pangaustralia/stealanegg/main/"
+local BASE_URL = "https://raw.githubusercontent.com/betdoyvaka/stealanegg/main/"
 
 _G.YOKUDO_EnablePrint = false
 
@@ -15,7 +15,7 @@ print = function(...)
     end
 end
 
-print("🤑 Loading ola...")
+print("🔵 Loading YOKUDO HUB...")
 
 -- ==================================================
 -- CACHE SYSTEM
@@ -79,7 +79,7 @@ local function CreateLoadingScreen()
     Title.Size = UDim2.new(1, -30, 0, 28)
     Title.Position = UDim2.new(0, 15, 0, 8)
     Title.BackgroundTransparency = 1
-    Title.Text = "ola👻"
+    Title.Text = "YOKUDO HUB"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 20
     Title.TextXAlignment = Enum.TextXAlignment.Center
@@ -279,4 +279,4 @@ Loading.Update(100)
 task.wait(0.3)
 Loading.Destroy()
 print("✅ Loading Screen Closed!")
-print("🚀 ola👻 | Ready!")
+print("🚀 YOKUDO HUB | Ready!")
