@@ -15,7 +15,7 @@ print = function(...)
     end
 end
 
-print(🤑 Loading ola...")
+print("🤑 Loading ola...")
 
 -- ==================================================
 -- CACHE SYSTEM
