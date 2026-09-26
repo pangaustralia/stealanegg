@@ -100,25 +100,63 @@ Main.Parent = ScreenGui
 -- ==================================================
 -- BACKGROUND IMAGE
 -- ==================================================
+
 local Background = Instance.new("ImageLabel")
 Background.Name = "BackgroundImage"
 Background.Size = UDim2.new(1, 0, 1, 0)
 Background.Position = UDim2.new(0, 0, 0, 0)
+
 Background.BackgroundTransparency = 1
 Background.BorderSizePixel = 0
 
--- Background image
-Background.Image = "rbxassetid://127094648833500"
+-- Put it behind every other UI element
+Background.ZIndex = 1
 
--- Make image clearly visible
+-- Your image
+local BackgroundAsset = "127094648833500"
+
+-- Normal Roblox asset
+Background.Image = "rbxassetid://" .. BackgroundAsset
+
 Background.ImageTransparency = 0
-
--- Fill the whole UI
 Background.ScaleType = Enum.ScaleType.Crop
 
--- IMPORTANT: put background behind the panels
-Background.ZIndex = 1
 Background.Parent = Main
+
+-- ==================================================
+-- IMAGE LOAD CHECK
+-- ==================================================
+
+task.spawn(function()
+
+    local success = pcall(function()
+        Services.ContentProvider:PreloadAsync({
+            Background
+        })
+    end)
+
+    if success and Background.IsLoaded then
+        print("✅ YOKUDO Background Loaded")
+    else
+        warn("⚠️ YOKUDO Background failed to load")
+
+        -- Thumbnail fallback
+        Background.Image =
+            "rbxthumb://type=Asset&id="
+            .. BackgroundAsset
+            .. "&w=1000&h=1000"
+
+        task.wait(1)
+
+        if Background.IsLoaded then
+            print("✅ YOKUDO Background Loaded using thumbnail")
+        else
+            warn("❌ Background asset cannot be loaded")
+        end
+    end
+
+end)
+
 -- ==================================================
 -- MAIN BORDER
 -- ==================================================
