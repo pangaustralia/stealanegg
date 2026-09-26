@@ -1,96 +1,119 @@
--- ==================================================
--- YOKUDO HUB | NEW PROJECT | UI
--- ==================================================
-
-local Services = {
-    Players = game:GetService("Players"),
-    TweenService = game:GetService("TweenService"),
-    UserInputService = game:GetService("UserInputService"),
-    RunService = game:GetService("RunService"),
-    CoreGui = game:GetService("CoreGui"),
-    ContentProvider = game:GetService("ContentProvider"),
-}
-
-local Settings = _G.YOKUDO
-local Theme = Settings.UI.Theme
 
 -- ==================================================
--- GUI PARENT (gethui if available)
+-- DRAG SYSTEM (Toggle)
 -- ==================================================
-local GuiParent = Services.CoreGui
+local ToggleDragging = false
+local ToggleDragStart = nil
+local ToggleStartPos = nil
+local ToggleActiveTouch = nil
 
-pcall(function()
-    if type(gethui) == "function" then
-        local HUI = gethui()
-        if HUI then GuiParent = HUI end
+local function StartToggleDrag(Input)
+    if ToggleDragging then return end
+
+    if Input.UserInputType == Enum.UserInputType.Touch then
+        ToggleActiveTouch = Input
+    end
+
+    ToggleDragging = true
+    ToggleDragStart = Input.Position
+    ToggleStartPos = Toggle.Position
+end
+
+local function StopToggleDrag()
+    ToggleDragging = false
+    ToggleActiveTouch = nil
+    ToggleDragStart = nil
+    ToggleStartPos = nil
+end
+
+Toggle.InputBegan:Connect(function(Input)
+    if Input.UserInputType == Enum.UserInputType.MouseButton1 or
+       Input.UserInputType == Enum.UserInputType.Touch then
+
+        StartToggleDrag(Input)
     end
 end)
 
--- Clean old instances
-pcall(function()
-    local Old = GuiParent:FindFirstChild("YOKUDO_HUB")
-    if Old then Old:Destroy() end
+Services.UserInputService.InputChanged:Connect(function(Input)
+    if not ToggleDragging then return end
 
-    local OldToggle = GuiParent:FindFirstChild("ToggleGUI")
-    if OldToggle then OldToggle:Destroy() end
+    if Input.UserInputType == Enum.UserInputType.Touch then
+        if ToggleActiveTouch and Input ~= ToggleActiveTouch then
+            return
+        end
+    end
+
+    if not ToggleDragStart or not ToggleStartPos then
+        return
+    end
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseMovement and
+       Input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local Delta = Input.Position - ToggleDragStart
+
+    Toggle.Position = UDim2.new(
+        ToggleStartPos.X.Scale,
+        ToggleStartPos.X.Offset + Delta.X,
+        ToggleStartPos.Y.Scale,
+        ToggleStartPos.Y.Offset + Delta.Y
+    )
+end)
+
+Services.UserInputService.InputEnded:Connect(function(Input)
+    if Input.UserInputType == Enum.UserInputType.Touch then
+
+        if ToggleActiveTouch and Input == ToggleActiveTouch then
+            StopToggleDrag()
+        end
+
+        return
+    end
+
+    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if ToggleDragging then
+            StopToggleDrag()
+        end
+    end
 end)
 
 -- ==================================================
--- TOGGLE (Y icon)
+-- TOGGLE UI SHOW/HIDE
 -- ==================================================
-local ASSET_ID = Settings.AssetID
-Services.ContentProvider:PreloadAsync({ASSET_ID})
+local isUIVisible = true
 
-local ToggleScreenGui = Instance.new("ScreenGui")
-ToggleScreenGui.Name = "ToggleGUI"
-ToggleScreenGui.ResetOnSpawn = false
-ToggleScreenGui.IgnoreGuiInset = true
-ToggleScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ToggleScreenGui.Parent = GuiParent
+Toggle.MouseButton1Click:Connect(function()
+    isUIVisible = not isUIVisible
 
-local Toggle = Instance.new("ImageButton")
-Toggle.Name = "Y"
-Toggle.Size = UDim2.new(0, 55, 0, 55)
-Toggle.Position = UDim2.new(0.02, 0, 0.5, -27.5)
-Toggle.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-Toggle.BorderSizePixel = 0
-Toggle.BackgroundTransparency = 0
-Toggle.Image = ASSET_ID
-Toggle.ZIndex = 999
-Toggle.Parent = ToggleScreenGui
+    ScreenGui.Enabled = isUIVisible
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1, 0)
-ToggleCorner.Parent = Toggle
+    Services.TweenService:Create(
+        Toggle,
+        TweenInfo.new(
+            0.1,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            Size = UDim2.new(0, 45, 0, 45)
+        }
+    ):Play()
 
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(170, 80, 255)
-ToggleStroke.Thickness = 1.5
-ToggleStroke.Transparency = 0.2
-ToggleStroke.Parent = Toggle
+    task.wait(0.1)
 
--- ==================================================
--- MAIN UI
--- ==================================================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "YOKUDO_HUB"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 999
-ScreenGui.Parent = GuiParent
+    Services.TweenService:Create(
+        Toggle,
+        TweenInfo.new(
+            0.1,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            Size = UDim2.new(0, 55, 0, 55)
+        }
+    ):Play()
+end)
 
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, Settings.UI.Width, 0, Settings.UI.Height)
-Main.Position = UDim2.new(
-    0.5,
-    -Settings.UI.Width / 2,
-    0.5,
-    -Settings.UI.Height / 2
-)
-
--- Main itself is transparent so the image can show
-Main.BackgroundTransparency = 1
-Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
+print("✅ UI Loaded")
