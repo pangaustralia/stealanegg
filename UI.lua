@@ -112,7 +112,7 @@ Background.BorderSizePixel = 0
 Background.Image = "rbxassetid://127094648833500"
 Background.ImageTransparency = 0
 Background.ScaleType = Enum.ScaleType.Crop
-Background.ZIndex = 0
+Background.ZIndex = 1
 Background.Parent = Main
 
 -- ==================================================
