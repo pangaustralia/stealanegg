@@ -1,24 +1,28 @@
 -- ==================================================
 -- YOKUDO HUB | FEATURE | VIPTP (AFK Farm Only)
--- First Egg: BodyV + BodyG (Shot TP)
--- Target: Instant TP
--- Recovery: BodyV + BodyG (No Shot TP)
--- Safe Zone: BodyV + BodyG → Reset + Stop
+-- ✅ ឯករាជ្យ — Speed ថេរ 1000/s ក្នុង file ខ្លួនឯង
+-- ✅ Tween + BodyV + BodyG — គណនា Duration ដោយផ្ទាល់
+-- ✅ First Egg: Shot TP | Target: Instant TP
+-- ✅ Recovery: Tween Direct ទៅ Egg Drop (គ្មានកន្រ្ដាក់)
+-- ✅ Safe Zone: Fix CFrame → រង់ចាំ 0.2s → Check Y → Reset (មិនធ្លុះដី)
 -- ==================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 local Container = workspace:WaitForChild("AreaEggSlotsClient")
 
 -- ==================================================
--- CONFIG
+-- CONFIG (ឯករាជ្យ — Speed ថេរ)
 -- ==================================================
 local Config = {
-    FlySpeed = 1000,
-    ReturnSpeed = 800,
+    -- ✅ Speed ថេរ 1000/s (កំណត់ក្នុង file ខ្លួនឯង)
+    TeleportSpeed = 800,
+
+    NearOffset = 20,
 
     FlyOffset = 5,
     ShotDistance = 25,
@@ -29,7 +33,7 @@ local Config = {
     Timeout = 20,
     CollectInterval = 0.05,
     TargetCollectTimeout = 10,
-    MaxRecoveryAttempts = 1000,
+    MaxRecoveryAttempts = 10000,
 
     BodyVelocityP = 5000,
     BodyGyroP = 50000,
@@ -40,6 +44,12 @@ local Config = {
 
     SearchPrefix = "FirstAreaEgg",
     PositionThreshold = 1,
+
+    RepeatCheckDelay = 0.05,
+
+    -- ✅ Safe Zone Fix Settings
+    SafeZoneFixDelay = 0.2,       -- រង់ចាំ Physics
+    SafeZoneMinY = 60,            -- Y អប្បបរមា (ក្រោមនេះ = ធ្លាក់)
 }
 
 -- ==================================================
@@ -53,7 +63,7 @@ if not CollectEvent then
     return
 end
 
-print("[VIPTP] CollectEvent OK")
+print("[VIPTP] CollectEvent OK | Speed:", Config.TeleportSpeed)
 
 -- ==================================================
 -- STATE
@@ -66,6 +76,7 @@ local State = {
 
     FlySequence = 0,
 
+    TweenConnection = nil,
     FlyConnection = nil,
     LockConnection = nil,
     BodyVelocity = nil,
@@ -233,9 +244,13 @@ local function DisableRagdollBypass()
 end
 
 -- ==================================================
--- CLEANUP MOVERS
+-- CLEANUP MOVERS (ការពារធ្លាក់)
 -- ==================================================
 local function CleanupMovers(KeepPlatformStand)
+    if State.TweenConnection then
+        pcall(function() State.TweenConnection:Cancel() end)
+        State.TweenConnection = nil
+    end
     if State.FlyConnection then
         State.FlyConnection:Disconnect()
         State.FlyConnection = nil
@@ -275,8 +290,10 @@ local function CleanupMovers(KeepPlatformStand)
         end)
     end
 
+    -- ✅ ការពារធ្លាក់
     if Root then
         pcall(function()
+            Root.CanCollide = true
             Root.AssemblyLinearVelocity = Vector3.zero
             Root.AssemblyAngularVelocity = Vector3.zero
         end)
@@ -306,9 +323,68 @@ local function StartLock(Position)
 end
 
 -- ==================================================
--- BODYV + BODYG FLY TP (Shot TP Optional)
+-- ✅ TWEEN TELEPORT DIRECT (សម្រាប់ RECOVERY)
+-- ✅ គណនា Duration ដោយផ្ទាល់ = ចម្ងាយ ÷ Speed
 -- ==================================================
-local function FlyTP(Destination, Speed, UseShotTP, IsSafeZone, Callback)
+local function TweenTeleportDirect(Destination, Callback)
+    State.FlySequence = State.FlySequence + 1
+    local Seq = State.FlySequence
+
+    CleanupMovers()
+
+    local Hum = GetHum()
+    local Root = GetRoot()
+    if not Hum or not Root or Hum.Health <= 0 then
+        if Callback then Callback() end
+        return
+    end
+
+    local FlyPos = Vector3.new(Destination.X, Destination.Y + Config.FlyOffset, Destination.Z)
+    local TargetCFrame = CFrame.new(FlyPos)
+
+    Hum.PlatformStand = true
+
+    -- ✅ គណនា Duration ដោយផ្ទាល់
+    local Distance = (FlyPos - Root.Position).Magnitude
+    local Duration = Distance / Config.TeleportSpeed
+
+    print(string.format("[VIPTP] Tween Direct | Dist: %.0f | Speed: %d | Duration: %.3fs",
+        Distance, Config.TeleportSpeed, Duration))
+
+    local Tween = TweenService:Create(
+        Root,
+        TweenInfo.new(Duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+        { CFrame = TargetCFrame }
+    )
+    State.TweenConnection = Tween
+    Tween:Play()
+
+    Tween.Completed:Wait()
+
+    if Seq ~= State.FlySequence then return end
+    if not State.Running then CleanupMovers() return end
+
+    local Hum2 = GetHum()
+    local Root2 = GetRoot()
+    if not Hum2 or not Root2 or Hum2.Health <= 0 then CleanupMovers() return end
+
+    Root2.CFrame = TargetCFrame
+    Root2.AssemblyLinearVelocity = Vector3.zero
+    Root2.AssemblyAngularVelocity = Vector3.zero
+
+    task.wait(0.05)
+
+    CleanupMovers(true)
+
+    if Callback then Callback() end
+end
+
+-- ==================================================
+-- TWEEN + BODYV + BODYG FLY TP
+-- ✅ គណនា Duration ដោយផ្ទាល់ = ចម្ងាយ ÷ Speed
+-- ✅ Safe Zone: Fix CFrame → រង់ចាំ 0.2s → Check Y → Reset
+-- ==================================================
+local function FlyTP(Destination, UseShotTP, IsSafeZone, Callback)
     State.FlySequence = State.FlySequence + 1
     local Seq = State.FlySequence
 
@@ -323,156 +399,208 @@ local function FlyTP(Destination, Speed, UseShotTP, IsSafeZone, Callback)
 
     Hum.PlatformStand = true
 
-    State.BodyVelocity = Instance.new("BodyVelocity")
-    State.BodyVelocity.Name = "YokudoBV"
-    State.BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    State.BodyVelocity.P = Config.BodyVelocityP
-    State.BodyVelocity.Velocity = Vector3.zero
-    State.BodyVelocity.Parent = Root
+    -- ✅ Step 1: Tween → Near Position (គណនា Duration ដោយផ្ទាល់)
+    local StartPos = Root.Position
+    local Direction = (FlyPos - StartPos)
+    local TotalDist = Direction.Magnitude
+    local DirUnit = TotalDist > 0 and Direction.Unit or Vector3.new(0, 0, -1)
 
-    State.BodyGyro = Instance.new("BodyGyro")
-    State.BodyGyro.Name = "YokudoBG"
-    State.BodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    State.BodyGyro.P = Config.BodyGyroP
-    State.BodyGyro.D = Config.BodyGyroD
-    State.BodyGyro.CFrame = Root.CFrame
-    State.BodyGyro.Parent = Root
+    local NearPos = FlyPos - (DirUnit * Config.NearOffset)
+    local NearDist = (NearPos - StartPos).Magnitude
+    local NearDuration = NearDist / Config.TeleportSpeed
 
-    local StartTime = tick()
-    local ShotDone = false
+    print(string.format("[VIPTP] Tween Near | Dist: %.0f | Speed: %d | Duration: %.3fs",
+        NearDist, Config.TeleportSpeed, NearDuration))
 
-    State.FlyConnection = RunService.Heartbeat:Connect(function()
-        if Seq ~= State.FlySequence then
-            if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
-            return
-        end
+    local TweenNear = TweenService:Create(
+        Root,
+        TweenInfo.new(NearDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out),
+        { CFrame = CFrame.new(NearPos, FlyPos) }
+    )
+    State.TweenConnection = TweenNear
+    TweenNear:Play()
 
+    task.spawn(function()
+        TweenNear.Completed:Wait()
+
+        if Seq ~= State.FlySequence then return end
         if not State.Running then CleanupMovers() return end
+
+        task.wait(0.03)
 
         local Hum2 = GetHum()
         local Root2 = GetRoot()
         if not Hum2 or not Root2 or Hum2.Health <= 0 then CleanupMovers() return end
-        if not State.BodyVelocity or not State.BodyGyro then CleanupMovers() return end
 
-        local CurrentPos = Root2.Position
-        local Direction = FlyPos - CurrentPos
-        local HorizDist = Vector3.new(Direction.X, 0, Direction.Z).Magnitude
-        local VertDist = math.abs(Direction.Y)
-        local TotalDist = Direction.Magnitude
+        -- ✅ Step 2: BodyV + BodyG
+        State.BodyVelocity = Instance.new("BodyVelocity")
+        State.BodyVelocity.Name = "YokudoBV"
+        State.BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        State.BodyVelocity.P = Config.BodyVelocityP
+        State.BodyVelocity.Velocity = Vector3.zero
+        State.BodyVelocity.Parent = Root2
 
-        -- Safe Zone: Stop at 5 → No Lock
-        if IsSafeZone and HorizDist <= Config.SafeStopDistance then
-            if State.BodyVelocity then
-                State.BodyVelocity.Velocity = Vector3.zero
-                State.BodyVelocity.MaxForce = Vector3.zero
+        State.BodyGyro = Instance.new("BodyGyro")
+        State.BodyGyro.Name = "YokudoBG"
+        State.BodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        State.BodyGyro.P = Config.BodyGyroP
+        State.BodyGyro.D = Config.BodyGyroD
+        State.BodyGyro.CFrame = Root2.CFrame
+        State.BodyGyro.Parent = Root2
+
+        local InitDir = (FlyPos - Root2.Position)
+        if InitDir.Magnitude > 1 then
+            State.BodyVelocity.Velocity = InitDir.Unit * Config.TeleportSpeed
+        end
+
+        local StartTime = tick()
+        local ShotDone = false
+
+        State.FlyConnection = RunService.Heartbeat:Connect(function()
+            if Seq ~= State.FlySequence then
+                if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
+                return
             end
-            if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
-            if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
 
-            task.spawn(function()
-                task.wait(0.1)
-                CleanupMovers(true)
-                task.wait(0.1)
-                if Callback then Callback() end
-            end)
-            return
-        end
+            if not State.Running then CleanupMovers() return end
 
-        -- Shot TP (តែពេល UseShotTP = true)
-        if not IsSafeZone and UseShotTP and not ShotDone and HorizDist <= Config.ShotDistance then
-            ShotDone = true
-            if State.BodyVelocity then
-                State.BodyVelocity.Velocity = Vector3.zero
-                State.BodyVelocity.MaxForce = Vector3.zero
+            local Hum3 = GetHum()
+            local Root3 = GetRoot()
+            if not Hum3 or not Root3 or Hum3.Health <= 0 then CleanupMovers() return end
+            if not State.BodyVelocity or not State.BodyGyro then CleanupMovers() return end
+
+            local CurrentPos = Root3.Position
+            local Dir = FlyPos - CurrentPos
+            local HorizDist = Vector3.new(Dir.X, 0, Dir.Z).Magnitude
+            local VertDist = math.abs(Dir.Y)
+            local TotalDist2 = Dir.Magnitude
+
+            -- ✅ Safe Zone: Fix CFrame → រង់ចាំ 0.2s → Check Y → Reset
+            if IsSafeZone and HorizDist <= Config.SafeStopDistance then
+                if State.BodyVelocity then
+                    State.BodyVelocity.Velocity = Vector3.zero
+                    State.BodyVelocity.MaxForce = Vector3.zero
+                end
+                if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
+                if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
+
+                -- ✅ Fix CFrame ត្រង់ Safe Zone (មិន + FlyOffset)
+                Root3.CFrame = CFrame.new(Config.SafeZone)
+                Root3.AssemblyLinearVelocity = Vector3.zero
+                Root3.AssemblyAngularVelocity = Vector3.zero
+
+                task.spawn(function()
+                    -- ✅ រង់ចាំ 0.2s ឲ្យ Physics នឹងនរ
+                    task.wait(Config.SafeZoneFixDelay)
+
+                    -- ✅ Check Y មុន Reset
+                    local Hum4 = GetHum()
+                    local Root4 = GetRoot()
+                    if Root4 then
+                        if Root4.Position.Y < Config.SafeZoneMinY then
+                            print("[VIPTP] ⚠️ Player ធ្លាក់ → Fix Y")
+                            Root4.CFrame = CFrame.new(Config.SafeZone)
+                            Root4.AssemblyLinearVelocity = Vector3.zero
+                            Root4.AssemblyAngularVelocity = Vector3.zero
+                        end
+                    end
+
+                    task.wait(0.1)
+
+                    -- ✅ Reset PlatformStand បន្ទាប់ពី Player នឹងនរ
+                    CleanupMovers()
+
+                    if Callback then Callback() end
+                end)
+                return
             end
-            if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
-            if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
 
-            task.spawn(function()
-                task.wait(0.1)
-                CleanupMovers(true)
-                Root2.CFrame = LockCFrame
-                Root2.AssemblyLinearVelocity = Vector3.zero
-                Root2.AssemblyAngularVelocity = Vector3.zero
-                task.wait(0.1)
-                StartLock(Destination)
-                if Callback then Callback() end
-            end)
-            return
-        end
+            -- ✅ Shot TP
+            if not IsSafeZone and UseShotTP and not ShotDone and HorizDist <= Config.ShotDistance then
+                ShotDone = true
+                if State.BodyVelocity then
+                    State.BodyVelocity.Velocity = Vector3.zero
+                    State.BodyVelocity.MaxForce = Vector3.zero
+                end
+                if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
+                if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
 
-        -- Arrived
-        if HorizDist <= Config.ArriveDistance and VertDist <= 2 then
-            if State.BodyVelocity then
-                State.BodyVelocity.Velocity = Vector3.zero
-                State.BodyVelocity.MaxForce = Vector3.zero
+                task.spawn(function()
+                    task.wait(0.05)
+                    CleanupMovers(true)
+                    Root3.CFrame = LockCFrame
+                    Root3.AssemblyLinearVelocity = Vector3.zero
+                    Root3.AssemblyAngularVelocity = Vector3.zero
+                    task.wait(0.1)  -- ✅ រង់ចាំ Physics
+                    StartLock(Destination)
+                    if Callback then Callback() end
+                end)
+                return
             end
-            if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
-            if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
 
-            task.spawn(function()
-                task.wait(0.1)
-                CleanupMovers(true)
-                Root2.CFrame = LockCFrame
-                Root2.AssemblyLinearVelocity = Vector3.zero
-                Root2.AssemblyAngularVelocity = Vector3.zero
-                task.wait(0.1)
-                StartLock(Destination)
+            -- ✅ Arrived
+            if HorizDist <= Config.ArriveDistance and VertDist <= 2 then
+                if State.BodyVelocity then
+                    State.BodyVelocity.Velocity = Vector3.zero
+                    State.BodyVelocity.MaxForce = Vector3.zero
+                end
+                if State.BodyGyro then State.BodyGyro.MaxTorque = Vector3.zero end
+                if State.FlyConnection then State.FlyConnection:Disconnect() State.FlyConnection = nil end
+
+                task.spawn(function()
+                    task.wait(0.05)
+                    CleanupMovers(true)
+                    Root3.CFrame = LockCFrame
+                    Root3.AssemblyLinearVelocity = Vector3.zero
+                    Root3.AssemblyAngularVelocity = Vector3.zero
+                    task.wait(0.1)  -- ✅ រង់ចាំ Physics
+                    StartLock(Destination)
+                    if Callback then Callback() end
+                end)
+                return
+            end
+
+            -- ✅ Timeout
+            if tick() - StartTime > Config.Timeout then
+                CleanupMovers()
                 if Callback then Callback() end
-            end)
-            return
-        end
+                return
+            end
 
-        -- Timeout
-        if tick() - StartTime > Config.Timeout then
-            CleanupMovers()
-            if Callback then Callback() end
-            return
-        end
+            if TotalDist2 > 1 then
+                State.BodyVelocity.Velocity = Dir.Unit * Config.TeleportSpeed
+            else
+                State.BodyVelocity.Velocity = Vector3.zero
+            end
 
-        -- Continue
-        if TotalDist > 1 then
-            State.BodyVelocity.Velocity = Direction.Unit * Speed
-        else
-            State.BodyVelocity.Velocity = Vector3.zero
-        end
-
-        State.BodyGyro.CFrame = CFrame.new(CurrentPos, CurrentPos + Vector3.new(Direction.X, 0, Direction.Z))
+            State.BodyGyro.CFrame = CFrame.new(CurrentPos, CurrentPos + Vector3.new(Dir.X, 0, Dir.Z))
+        end)
     end)
 end
 
 -- ==================================================
--- INSTANT TP (សម្រាប់ Target Egg)
+-- INSTANT TP
 -- ==================================================
 local function InstantTP(Destination, Callback)
-    if not Destination then
-        if Callback then Callback() end
-        return
-    end
+    if not Destination then if Callback then Callback() end return end
 
     State.FlySequence = State.FlySequence + 1
     CleanupMovers()
 
     local Hum = GetHum()
     local Root = GetRoot()
-    if not Hum or not Root or Hum.Health <= 0 then
-        if Callback then Callback() end
-        return
-    end
+    if not Hum or not Root or Hum.Health <= 0 then return end
 
     local LockCFrame = CFrame.new(Destination + Vector3.new(0, Config.LockAbove, 0))
-
     Hum.PlatformStand = true
 
     task.spawn(function()
+        task.wait(0.03)
         Root.CFrame = LockCFrame
         Root.AssemblyLinearVelocity = Vector3.zero
         Root.AssemblyAngularVelocity = Vector3.zero
-
-        task.wait(0.1)
-
+        task.wait(0.1)  -- ✅ រង់ចាំ Physics
         StartLock(Destination)
-
         if Callback then Callback() end
     end)
 end
@@ -597,12 +725,59 @@ local function IsFirstEggInContainer()
     return State.FirstEggUid and Container and Container:FindFirstChild(State.FirstEggUid) ~= nil
 end
 
-local function IsTargetInContainer()
-    return State.TargetUid and Container and Container:FindFirstChild(State.TargetUid) ~= nil
+local function CheckTargetUID(TargetUid, Mode)
+    if not TargetUid then return "none" end
+    Mode = Mode or "spawn_only"
+
+    local InContainer = false
+    if Container then
+        InContainer = Container:FindFirstChild(TargetUid) ~= nil
+    end
+
+    if InContainer then return "spawn" end
+
+    if Mode == "both" then
+        local InWorkspace = workspace:FindFirstChild(TargetUid) ~= nil
+        if InWorkspace then return "workspace" end
+    end
+
+    return "none"
 end
 
-local function IsTargetInWorkspace()
-    return State.TargetUid and workspace:FindFirstChild(State.TargetUid) ~= nil
+-- ==================================================
+-- RESET FOR REPEAT
+-- ==================================================
+local function ResetForRepeat(Location)
+    State.Step = "search"
+    State.FlySequence = State.FlySequence + 1
+
+    State.FlyTargetStarted = false
+    State.CollectDone = false
+    State.TargetCollected = false
+    State.RemotesFired = false
+    State.RecoveryTriggered = false
+    State.RecoveryAttempts = 0
+    State.CollectAttempts = 0
+    State.CollectTime = 0
+    State.TargetCollectStartTime = 0
+
+    State.FirstEggList = {}
+    State.FirstEggUid = nil
+    State.FirstEggSlotKey = nil
+
+    if Location == "spawn" then
+        State.Mode = "spawn"
+        State.SavedTargetPosition = nil
+    elseif Location == "workspace" then
+        State.Mode = "workspace"
+        local Egg = workspace:FindFirstChild(State.TargetUid)
+        if Egg then State.SavedTargetPosition = GetPosition(Egg) end
+    end
+
+    if State.LockConnection then
+        State.LockConnection:Disconnect()
+        State.LockConnection = nil
+    end
 end
 
 -- ==================================================
@@ -639,10 +814,10 @@ local function AutoStop()
     State.RecoveryAttempts = 0
     State.SavedTargetPosition = nil
 
-    print("[VIPTP] Auto Stop")
+    print("[VIPTP] Auto Stop → Callback FarmingManager")
 
     task.spawn(function()
-        task.wait(0.5)
+        task.wait(0.2)
         if _G.YOKUDO_FarmingManager then
             if type(_G.YOKUDO_FarmingManager.OnVIPTPComplete) == "function" then
                 local Success, Err = pcall(function()
@@ -668,28 +843,25 @@ local function StartFlyToTarget()
     State.FlyTargetStarted = true
     State.Step = "to_target"
 
+    local Location = CheckTargetUID(State.TargetUid, "spawn_only")
+
     local TargetPos
-    if State.Mode == "spawn" then
+    if Location == "spawn" then
+        State.Mode = "spawn"
         local Egg = Container and Container:FindFirstChild(State.TargetUid)
         if Egg then TargetPos = GetPosition(Egg) end
-    elseif State.Mode == "workspace" then
-        TargetPos = State.SavedTargetPosition
-        if not TargetPos then
-            local Egg = workspace:FindFirstChild(State.TargetUid)
-            if Egg then
-                TargetPos = GetPosition(Egg)
-                State.SavedTargetPosition = TargetPos
-            end
-        end
     end
 
-    if not TargetPos then AutoStop() return end
+    if not TargetPos then
+        print("[VIPTP] Target not in Spawn → AutoStop")
+        AutoStop()
+        return
+    end
 
-    print("[VIPTP] Instant TP to Target Egg")
+    print("[VIPTP] Instant TP to Target | Location: spawn")
 
     InstantTP(TargetPos, function()
         print("[VIPTP] ✅ Instant TP Arrived Target")
-
         State.TargetCollected = false
         State.CollectTime = 0
         State.CollectAttempts = 0
@@ -700,7 +872,7 @@ local function StartFlyToTarget()
 end
 
 -- ==================================================
--- RECOVERY (BodyV + BodyG | No Shot TP)
+-- RECOVERY (Tween Direct ទៅ Egg Drop — Speed 1000/s)
 -- ==================================================
 local function FlyToTargetAgain()
     State.RecoveryAttempts = State.RecoveryAttempts + 1
@@ -710,24 +882,26 @@ local function FlyToTargetAgain()
         return
     end
 
-    print("[VIPTP] Recovery #" .. State.RecoveryAttempts .. " → BodyV + BodyG (No Shot TP)")
+    print("[VIPTP] Recovery #" .. State.RecoveryAttempts)
     State.Step = "recovery"
 
     State.FlySequence = State.FlySequence + 1
     CleanupMovers()
 
     local TargetPos
-    if IsTargetInContainer() then
-        State.Mode = "spawn"
-        local Egg = Container:FindFirstChild(State.TargetUid)
-        if Egg then TargetPos = GetPosition(Egg) end
-    elseif IsTargetInWorkspace() then
+    local Location = CheckTargetUID(State.TargetUid, "both")
+
+    if Location == "workspace" then
         State.Mode = "workspace"
         local Egg = workspace:FindFirstChild(State.TargetUid)
         if Egg then
             TargetPos = GetPosition(Egg)
             State.SavedTargetPosition = TargetPos
         end
+    elseif Location == "spawn" then
+        State.Mode = "spawn"
+        local Egg = Container:FindFirstChild(State.TargetUid)
+        if Egg then TargetPos = GetPosition(Egg) end
     else
         print("[VIPTP] Target Gone → AutoStop")
         AutoStop()
@@ -739,10 +913,9 @@ local function FlyToTargetAgain()
     State.RecoveryTriggered = false
     State.TargetCollected = false
 
-    -- ✅ UseShotTP = false → គ្មាន Shot TP ទេ
-    FlyTP(TargetPos, Config.FlySpeed, false, false, function()
-        print("[VIPTP] ✅ Recovery #" .. State.RecoveryAttempts .. " Arrived → collect_target")
-
+    print("[VIPTP] Recovery → Tween Direct to Egg Drop")
+    TweenTeleportDirect(TargetPos, function()
+        print("[VIPTP] ✅ Recovery #" .. State.RecoveryAttempts .. " Arrived")
         State.TargetCollected = false
         State.CollectTime = 0
         State.CollectAttempts = 0
@@ -754,18 +927,49 @@ local function FlyToTargetAgain()
 end
 
 -- ==================================================
--- SAFE ZONE (BodyV + BodyG → Reset + Stop)
+-- SAFE ZONE (Fix CFrame → រក UID ថ្មីភ្លាម)
 -- ==================================================
 local function FlyToSafeZone()
     State.Step = "to_safe"
     State.RecoveryTriggered = false
     State.TargetCollected = false
 
-    print("[VIPTP] BodyV + BodyG to Safe Zone")
+    print("[VIPTP] Tween + BodyV + BodyG to Safe Zone")
 
-    FlyTP(Config.SafeZone, Config.ReturnSpeed, false, true, function()
-        print("[VIPTP] ✅ Arrived Safe Zone → AutoStop")
-        AutoStop()
+    FlyTP(Config.SafeZone, false, true, function()
+        print("[VIPTP] ✅ Arrived Safe Zone")
+
+        task.spawn(function()
+            task.wait(Config.RepeatCheckDelay)
+
+            print("[VIPTP] Finding New UID from FarmingManager...")
+
+            local NewUid = nil
+            local NewLocation = "none"
+
+            if _G.YOKUDO_FarmingManager and _G.YOKUDO_FarmingManager.FindBestEgg then
+                local BestEgg = _G.YOKUDO_FarmingManager.FindBestEgg()
+                if BestEgg then
+                    NewUid = BestEgg.Uid
+                    NewLocation = CheckTargetUID(NewUid, "spawn_only")
+                    print("[VIPTP] New UID:", NewUid, "| Location:", NewLocation)
+                end
+            end
+
+            if NewUid and NewLocation ~= "none" then
+                print("[VIPTP] ✅ New UID → StartProcess")
+
+                State.TargetUid = NewUid
+                State.SavedTargetPosition = nil
+
+                ResetForRepeat(NewLocation)
+                task.wait(0.05)
+                StartProcess()
+            else
+                print("[VIPTP] ❌ No UID → Callback Manager")
+                AutoStop()
+            end
+        end)
     end)
 end
 
@@ -871,7 +1075,7 @@ end
 -- ==================================================
 -- MAIN PROCESS
 -- ==================================================
-local function StartProcess()
+function StartProcess()
     State.Running = true
     State.Step = "search"
     State.FlySequence = 0
@@ -885,39 +1089,40 @@ local function StartProcess()
     State.RemotesFired = false
     State.RecoveryTriggered = false
     State.RecoveryAttempts = 0
-    State.SavedTargetPosition = nil
-    State.TargetLockedCFrame = nil
 
     SetupDropHeldEgg()
     SaveStats()
     EnableRagdollBypass()
 
-    if IsTargetInContainer() then
+    local Location = CheckTargetUID(State.TargetUid, "spawn_only")
+    print("[VIPTP] Target Location:", Location)
+
+    if Location == "spawn" then
         State.Mode = "spawn"
-        print("[VIPTP] Mode: spawn")
-    elseif IsTargetInWorkspace() then
-        State.Mode = "workspace"
-        local Egg = workspace:FindFirstChild(State.TargetUid)
-        if Egg then State.SavedTargetPosition = GetPosition(Egg) end
-        print("[VIPTP] Mode: workspace")
     else
         local Waited = 0
-        while State.Running and not IsTargetInContainer() and not IsTargetInWorkspace() do
-            task.wait(0.5)
-            Waited = Waited + 0.5
-            if Waited > 60 then AutoStop() return end
+        while State.Running and CheckTargetUID(State.TargetUid, "spawn_only") == "none" do
+            task.wait(0.1)
+            Waited = Waited + 0.1
+            if Waited > 3 then
+                print("[VIPTP] ⚠️ Target not found 3s → AutoStop")
+                AutoStop()
+                return
+            end
         end
-        if IsTargetInContainer() then
-            State.Mode = "spawn"
-        elseif IsTargetInWorkspace() then
-            State.Mode = "workspace"
-            local Egg = workspace:FindFirstChild(State.TargetUid)
-            if Egg then State.SavedTargetPosition = GetPosition(Egg) end
-        end
+        State.Mode = "spawn"
     end
 
     SearchFirstEggs()
-    if #State.FirstEggList == 0 then AutoStop() return end
+
+    if #State.FirstEggList == 0 then
+        task.wait(0.3)
+        SearchFirstEggs()
+        if #State.FirstEggList == 0 then
+            AutoStop()
+            return
+        end
+    end
 
     local Closest = FindClosestEgg()
     if not Closest then AutoStop() return end
@@ -928,8 +1133,8 @@ local function StartProcess()
     State.Step = "fly_first"
     StartActiveTask()
 
-    print("[VIPTP] BodyV + BodyG to First Egg (Shot TP)")
-    FlyTP(EggPos, Config.FlySpeed, true, false, function()
+    print("[VIPTP] Tween + BodyV + BodyG to First Egg (Shot TP | Speed 1000/s)")
+    FlyTP(EggPos, true, false, function()
         State.CollectDone = false
         State.CollectTime = 0
         State.Step = "collect_first"
@@ -1015,10 +1220,9 @@ _G.YOKUDO_VIPTP = {
     IsEnabled = function() return State.Running end,
     GetTargetId = function() return State.TargetUid end,
     GetMode = function() return State.Mode end,
-    FLY_SPEED = Config.FlySpeed,
-    RETURN_SPEED = Config.ReturnSpeed,
+    TELEPORT_SPEED = Config.TeleportSpeed,
     FLY_OFFSET = Config.FlyOffset,
     SAFE_ZONE = Config.SafeZone,
 }
 
-print("✅ VIPTP Loaded (First: BodyV+BodyG+Shot | Target: Instant | Recovery: BodyV+BodyG No Shot | Safe: BodyV+BodyG)")
+print("✅ VIPTP Loaded (Independent | Speed 1000/s | Safe Zone Fix Y)")
