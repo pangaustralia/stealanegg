@@ -1,5 +1,6 @@
 -- ==================================================
 -- YOKUDO HUB | NEW PROJECT | UI
+-- THEME: FALLEN ANGEL (obsidian / blood-red / muted gold)
 -- ==================================================
 
 local Services = {
@@ -12,7 +13,24 @@ local Services = {
 }
 
 local Settings = _G.YOKUDO
-local Theme = Settings.UI.Theme
+
+-- ==================================================
+-- FALLEN ANGEL THEME
+-- Falls back to Settings.UI.Theme fields if you set them,
+-- otherwise uses this palette by default.
+-- ==================================================
+local FallenAngel = {
+    Background = Color3.fromRGB(10, 8, 11),     -- near-black obsidian
+    TopBar     = Color3.fromRGB(16, 10, 13),    -- charred maroon-black
+    Sidebar    = Color3.fromRGB(13, 9, 12),
+    Text       = Color3.fromRGB(232, 214, 198), -- pale bone/gold
+    SubText    = Color3.fromRGB(150, 58, 58),   -- dried blood red
+    Accent     = Color3.fromRGB(150, 20, 30),   -- blood crimson
+    Gold       = Color3.fromRGB(178, 138, 62),  -- tarnished gold trim
+}
+
+local SourceTheme = (Settings and Settings.UI and Settings.UI.Theme) or {}
+local Theme = setmetatable(SourceTheme, { __index = FallenAngel })
 
 -- ==================================================
 -- GUI PARENT (gethui if available)
@@ -51,7 +69,7 @@ local Toggle = Instance.new("ImageButton")
 Toggle.Name = "Y"
 Toggle.Size = UDim2.new(0, 55, 0, 55)
 Toggle.Position = UDim2.new(0.02, 0, 0.5, -27.5)
-Toggle.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Toggle.BackgroundColor3 = Color3.fromRGB(8, 6, 8) -- obsidian
 Toggle.BorderSizePixel = 0
 Toggle.BackgroundTransparency = 0
 Toggle.Image = ASSET_ID
@@ -63,10 +81,16 @@ ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = Toggle
 
 local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(200, 200, 220)
+ToggleStroke.Color = FallenAngel.Gold
 ToggleStroke.Thickness = 1.5
-ToggleStroke.Transparency = 0.2
+ToggleStroke.Transparency = 0.15
 ToggleStroke.Parent = Toggle
+
+local ToggleGlow = Instance.new("UIStroke")
+ToggleGlow.Color = FallenAngel.Accent
+ToggleGlow.Thickness = 3
+ToggleGlow.Transparency = 0.7
+ToggleGlow.Parent = Toggle
 
 -- ==================================================
 -- MAIN UI
@@ -94,10 +118,16 @@ MainCorner.CornerRadius = UDim.new(0, 0)
 MainCorner.Parent = Main
 
 local MainBorder = Instance.new("UIStroke")
-MainBorder.Color = Color3.fromRGB(200, 200, 220)
-MainBorder.Thickness = 2
-MainBorder.Transparency = 0.1
+MainBorder.Color = FallenAngel.Gold
+MainBorder.Thickness = 1.5
+MainBorder.Transparency = 0.25
 MainBorder.Parent = Main
+
+local MainAccentBorder = Instance.new("UIStroke")
+MainAccentBorder.Color = FallenAngel.Accent
+MainAccentBorder.Thickness = 3
+MainAccentBorder.Transparency = 0.75
+MainAccentBorder.Parent = Main
 
 -- ==================================================
 -- TOP BAR
@@ -113,17 +143,19 @@ TopBar.Parent = Main
 
 local TopGradient = Instance.new("UIGradient")
 TopGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(36, 38, 53)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 23, 30))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(46, 14, 18)),   -- ember red
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 11, 14)), -- charred maroon
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 6, 8))       -- ash black
 })
+TopGradient.Rotation = 0
 TopGradient.Parent = TopBar
 
 local TopLine = Instance.new("Frame")
 TopLine.Name = "TopLine"
 TopLine.Size = UDim2.new(1, 0, 0, 2)
 TopLine.Position = UDim2.new(0, 0, 1, -2)
-TopLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
-TopLine.BackgroundTransparency = 0.2
+TopLine.BackgroundColor3 = FallenAngel.Gold
+TopLine.BackgroundTransparency = 0.15
 TopLine.BorderSizePixel = 0
 TopLine.ZIndex = 22
 TopLine.Parent = TopBar
@@ -134,7 +166,7 @@ Title.Size = UDim2.new(1, -36, 0, 27)
 Title.Position = UDim2.new(0, 18, 0, 7)
 Title.BackgroundTransparency = 1
 Title.Text = Settings.Name
-Title.TextColor3 = Theme.Text
+Title.TextColor3 = FallenAngel.Text
 Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.GothamBold
@@ -147,7 +179,7 @@ Subtitle.Size = UDim2.new(1, -36, 0, 18)
 Subtitle.Position = UDim2.new(0, 18, 0, 32)
 Subtitle.BackgroundTransparency = 1
 Subtitle.Text = Settings.Version
-Subtitle.TextColor3 = Theme.SubText
+Subtitle.TextColor3 = FallenAngel.SubText
 Subtitle.TextSize = 10
 Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 Subtitle.Font = Enum.Font.GothamMedium
@@ -166,12 +198,20 @@ Sidebar.BorderSizePixel = 0
 Sidebar.ZIndex = 5
 Sidebar.Parent = Main
 
+local SidebarGradient = Instance.new("UIGradient")
+SidebarGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 10, 13)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 6, 8))
+})
+SidebarGradient.Rotation = 90
+SidebarGradient.Parent = Sidebar
+
 local SidebarLine = Instance.new("Frame")
 SidebarLine.Name = "SidebarLine"
 SidebarLine.Size = UDim2.new(0, 2, 1, 0)
 SidebarLine.Position = UDim2.new(1, -2, 0, 0)
-SidebarLine.BackgroundColor3 = Color3.fromRGB(200, 200, 220)
-SidebarLine.BackgroundTransparency = 0.15
+SidebarLine.BackgroundColor3 = FallenAngel.Gold
+SidebarLine.BackgroundTransparency = 0.2
 SidebarLine.BorderSizePixel = 0
 SidebarLine.ZIndex = 6
 SidebarLine.Parent = Sidebar
@@ -184,8 +224,9 @@ TabScroll.BorderSizePixel = 0
 TabScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 TabScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 TabScroll.ScrollingDirection = Enum.ScrollingDirection.Y
-TabScroll.ScrollBarThickness = 0
-TabScroll.ScrollBarImageTransparency = 1
+TabScroll.ScrollBarThickness = 2
+TabScroll.ScrollBarImageColor3 = FallenAngel.Accent
+TabScroll.ScrollBarImageTransparency = 0.3
 TabScroll.Active = true
 TabScroll.ZIndex = 6
 TabScroll.Parent = Sidebar
@@ -225,6 +266,7 @@ _G.YOKUDO_Content = Content
 _G.YOKUDO_ScreenGui = ScreenGui
 _G.YOKUDO_Toggle = Toggle
 _G.YOKUDO_GuiParent = GuiParent
+_G.YOKUDO_Theme = FallenAngel
 
 -- ==================================================
 -- DRAG SYSTEM (Main)
@@ -322,6 +364,9 @@ local ToggleDragStart = nil
 local ToggleStartPos = nil
 local ToggleActiveTouch = nil
 
+-- Anchor position for the toggle, independent of the hover bob offset below.
+local ToggleBasePosition = Toggle.Position
+
 local function StartToggleDrag(Input)
     if ToggleDragging then return end
     if Input.UserInputType == Enum.UserInputType.Touch then
@@ -329,7 +374,7 @@ local function StartToggleDrag(Input)
     end
     ToggleDragging = true
     ToggleDragStart = Input.Position
-    ToggleStartPos = Toggle.Position
+    ToggleStartPos = ToggleBasePosition
 end
 
 local function StopToggleDrag()
@@ -356,12 +401,14 @@ Services.UserInputService.InputChanged:Connect(function(Input)
        Input.UserInputType ~= Enum.UserInputType.Touch then return end
 
     local Delta = Input.Position - ToggleDragStart
-    Toggle.Position = UDim2.new(
+    local NewPosition = UDim2.new(
         ToggleStartPos.X.Scale,
         ToggleStartPos.X.Offset + Delta.X,
         ToggleStartPos.Y.Scale,
         ToggleStartPos.Y.Offset + Delta.Y
     )
+    Toggle.Position = NewPosition
+    ToggleBasePosition = NewPosition
 end)
 
 Services.UserInputService.InputEnded:Connect(function(Input)
@@ -377,11 +424,30 @@ Services.UserInputService.InputEnded:Connect(function(Input)
 end)
 
 -- ==================================================
+-- TOGGLE HOVER ANIMATION
+-- Gentle vertical bob, paused while the toggle is being dragged.
+-- ==================================================
+local HoverAmplitude = 6   -- pixels above/below the base position
+local HoverSpeed = 2       -- radians/sec
+
+Services.RunService.Heartbeat:Connect(function()
+    if ToggleDragging then return end
+
+    local Offset = math.sin(tick() * HoverSpeed) * HoverAmplitude
+    Toggle.Position = UDim2.new(
+        ToggleBasePosition.X.Scale,
+        ToggleBasePosition.X.Offset,
+        ToggleBasePosition.Y.Scale,
+        ToggleBasePosition.Y.Offset + Offset
+    )
+end)
+
+-- ==================================================
 -- TOGGLE UI SHOW/HIDE
 -- ==================================================
 local isUIVisible = true
 
-Toggle.MouseButton1Click:Connect(function()
+local function ToggleUI()
     isUIVisible = not isUIVisible
     ScreenGui.Enabled = isUIVisible
 
@@ -392,6 +458,18 @@ Toggle.MouseButton1Click:Connect(function()
     Services.TweenService:Create(Toggle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 55, 0, 55)
     }):Play()
+end
+
+Toggle.MouseButton1Click:Connect(ToggleUI)
+
+-- ==================================================
+-- KEYBIND (L to toggle UI)
+-- ==================================================
+Services.UserInputService.InputBegan:Connect(function(Input, GameProcessedEvent)
+    if GameProcessedEvent then return end
+    if Input.KeyCode == Enum.KeyCode.L then
+        ToggleUI()
+    end
 end)
 
-print("✅ UI Loaded")
+print("✅ UI Loaded (Fallen Angel theme)")
