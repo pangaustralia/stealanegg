@@ -207,7 +207,7 @@ Sidebar.Position = UDim2.new(0, 0, 0, 58)
 
 -- Purple-tinted transparent sidebar
 Sidebar.BackgroundColor3 = Theme.Sidebar
-Sidebar.BackgroundTransparency = 0.25
+Sidebar.BackgroundTransparency = 0.45
 
 Sidebar.BorderSizePixel = 0
 Sidebar.ZIndex = 5
@@ -269,7 +269,7 @@ Content.Position = UDim2.new(
 
 -- Transparent purple-tinted content
 Content.BackgroundColor3 = Theme.Background
-Content.BackgroundTransparency = 0.30
+Content.BackgroundTransparency = 0.50
 
 Content.BorderSizePixel = 0
 Content.ZIndex = 5
