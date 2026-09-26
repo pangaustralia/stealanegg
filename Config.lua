@@ -9,7 +9,7 @@ _G.YOKUDO = {
     Author = "ola",
 
     -- Asset
-    AssetID = "rbxassetid://101352576986760",
+    AssetID = "rbxassetid://118134537370166",
 
     -- UI
     UI = {
