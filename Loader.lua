@@ -15,7 +15,7 @@ print = function(...)
     end
 end
 
-print("🔵 Loading YOKUDO HUB...")
+print("🤑 Loading ola...")
 
 -- ==================================================
 -- CACHE SYSTEM
@@ -79,7 +79,7 @@ local function CreateLoadingScreen()
     Title.Size = UDim2.new(1, -30, 0, 28)
     Title.Position = UDim2.new(0, 15, 0, 8)
     Title.BackgroundTransparency = 1
-    Title.Text = "YOKUDO HUB"
+    Title.Text = "🤑🤑🤑"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 20
     Title.TextXAlignment = Enum.TextXAlignment.Center
@@ -92,7 +92,7 @@ local function CreateLoadingScreen()
     Subtitle.Size = UDim2.new(1, -30, 0, 14)
     Subtitle.Position = UDim2.new(0, 15, 0, 36)
     Subtitle.BackgroundTransparency = 1
-    Subtitle.Text = "Steal An Egg"
+    Subtitle.Text = "kawat itlog"
     Subtitle.TextColor3 = Color3.fromRGB(145, 145, 175)
     Subtitle.TextSize = 9
     Subtitle.TextXAlignment = Enum.TextXAlignment.Center
@@ -279,4 +279,4 @@ Loading.Update(100)
 task.wait(0.3)
 Loading.Destroy()
 print("✅ Loading Screen Closed!")
-print("🚀 YOKUDO HUB | Ready!")
+print("🚀 ola | Ready!")
