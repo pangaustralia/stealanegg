@@ -1,4 +1,4 @@
--- ==================================================
+    -- ==================================================
 -- YOKUDO HUB | NEW PROJECT | UI
 -- ==================================================
 
@@ -98,6 +98,22 @@ MainBorder.Color = Color3.fromRGB(170, 80, 255)
 MainBorder.Thickness = 2
 MainBorder.Transparency = 0.1
 MainBorder.Parent = Main
+
+
+-- ==================================================
+-- MAIN BACKGROUND IMAGE
+-- ==================================================
+local Background = Instance.new("ImageLabel")
+Background.Name = "BackgroundImage"
+Background.Size = UDim2.new(1, 0, 1, 0)
+Background.Position = UDim2.new(0, 0, 0, 0)
+Background.BackgroundTransparency = 1
+Background.BorderSizePixel = 0
+Background.Image = "rbxassetid://127094648833500"
+Background.ImageTransparency = 0
+Background.ScaleType = Enum.ScaleType.Crop
+Background.ZIndex = 0
+Background.Parent = Main
 
 -- ==================================================
 -- TOP BAR
