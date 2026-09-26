@@ -1,4 +1,4 @@
-    -- ==================================================
+-- ==================================================
 -- YOKUDO HUB | NEW PROJECT | UI
 -- ==================================================
 
@@ -30,6 +30,7 @@ end)
 pcall(function()
     local Old = GuiParent:FindFirstChild("YOKUDO_HUB")
     if Old then Old:Destroy() end
+
     local OldToggle = GuiParent:FindFirstChild("ToggleGUI")
     if OldToggle then OldToggle:Destroy() end
 end)
@@ -82,26 +83,23 @@ ScreenGui.Parent = GuiParent
 local Main = Instance.new("Frame")
 Main.Name = "Main"
 Main.Size = UDim2.new(0, Settings.UI.Width, 0, Settings.UI.Height)
-Main.Position = UDim2.new(0.5, -Settings.UI.Width / 2, 0.5, -Settings.UI.Height / 2)
-Main.BackgroundColor3 = Theme.Background
+Main.Position = UDim2.new(
+    0.5,
+    -Settings.UI.Width / 2,
+    0.5,
+    -Settings.UI.Height / 2
+)
+
+-- Main itself is transparent so the image can show
+Main.BackgroundTransparency = 1
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
 Main.Active = true
+Main.ZIndex = 1
 Main.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 0)
-MainCorner.Parent = Main
-
-local MainBorder = Instance.new("UIStroke")
-MainBorder.Color = Color3.fromRGB(170, 80, 255)
-MainBorder.Thickness = 2
-MainBorder.Transparency = 0.1
-MainBorder.Parent = Main
-
-
 -- ==================================================
--- MAIN BACKGROUND IMAGE
+-- BACKGROUND IMAGE
 -- ==================================================
 local Background = Instance.new("ImageLabel")
 Background.Name = "BackgroundImage"
@@ -109,11 +107,28 @@ Background.Size = UDim2.new(1, 0, 1, 0)
 Background.Position = UDim2.new(0, 0, 0, 0)
 Background.BackgroundTransparency = 1
 Background.BorderSizePixel = 0
+
+-- Your background image
 Background.Image = "rbxassetid://127094648833500"
+
+-- Adjust this if you want the image lighter/darker
 Background.ImageTransparency = 0
+
+-- Crop image to fit the GUI
 Background.ScaleType = Enum.ScaleType.Crop
-Background.ZIndex = 1
+
+-- Keep image behind all UI elements
+Background.ZIndex = 0
 Background.Parent = Main
+
+-- ==================================================
+-- MAIN BORDER
+-- ==================================================
+local MainBorder = Instance.new("UIStroke")
+MainBorder.Color = Color3.fromRGB(170, 80, 255)
+MainBorder.Thickness = 2
+MainBorder.Transparency = 0.1
+MainBorder.Parent = Main
 
 -- ==================================================
 -- TOP BAR
@@ -122,6 +137,7 @@ local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 58)
 TopBar.BackgroundColor3 = Theme.TopBar
+TopBar.BackgroundTransparency = 0.08
 TopBar.BorderSizePixel = 0
 TopBar.Active = true
 TopBar.ZIndex = 20
@@ -129,8 +145,14 @@ TopBar.Parent = Main
 
 local TopGradient = Instance.new("UIGradient")
 TopGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(65, 30, 95)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 35))
+    ColorSequenceKeypoint.new(
+        0,
+        Color3.fromRGB(65, 30, 95)
+    ),
+    ColorSequenceKeypoint.new(
+        1,
+        Color3.fromRGB(25, 15, 35)
+    )
 })
 TopGradient.Parent = TopBar
 
@@ -175,9 +197,18 @@ Subtitle.Parent = TopBar
 -- ==================================================
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0, Settings.UI.SidebarWidth, 1, -58)
+Sidebar.Size = UDim2.new(
+    0,
+    Settings.UI.SidebarWidth,
+    1,
+    -58
+)
 Sidebar.Position = UDim2.new(0, 0, 0, 58)
+
+-- Purple-tinted transparent sidebar
 Sidebar.BackgroundColor3 = Theme.Sidebar
+Sidebar.BackgroundTransparency = 0.25
+
 Sidebar.BorderSizePixel = 0
 Sidebar.ZIndex = 5
 Sidebar.Parent = Main
@@ -223,9 +254,23 @@ TabList.Parent = TabScroll
 -- ==================================================
 local Content = Instance.new("Frame")
 Content.Name = "Content"
-Content.Size = UDim2.new(1, -Settings.UI.SidebarWidth, 1, -58)
-Content.Position = UDim2.new(0, Settings.UI.SidebarWidth, 0, 58)
+Content.Size = UDim2.new(
+    1,
+    -Settings.UI.SidebarWidth,
+    1,
+    -58
+)
+Content.Position = UDim2.new(
+    0,
+    Settings.UI.SidebarWidth,
+    0,
+    58
+)
+
+-- Transparent purple-tinted content
 Content.BackgroundColor3 = Theme.Background
+Content.BackgroundTransparency = 0.30
+
 Content.BorderSizePixel = 0
 Content.ZIndex = 5
 Content.Parent = Main
@@ -252,9 +297,11 @@ local ActiveTouch = nil
 
 local function StartDrag(Input)
     if Dragging then return end
+
     if Input.UserInputType == Enum.UserInputType.Touch then
         ActiveTouch = Input
     end
+
     Dragging = true
     DragStart = Input.Position
     StartPosition = Main.Position
@@ -270,12 +317,14 @@ end
 TopBar.InputBegan:Connect(function(Input)
     if Input.UserInputType == Enum.UserInputType.MouseButton1 or
        Input.UserInputType == Enum.UserInputType.Touch then
+
         StartDrag(Input)
     end
 end)
 
 local function CreateDragZone(Name, Position, Size)
     local Zone = Instance.new("Frame")
+
     Zone.Name = Name
     Zone.Position = Position
     Zone.Size = Size
@@ -288,6 +337,7 @@ local function CreateDragZone(Name, Position, Size)
     Zone.InputBegan:Connect(function(Input)
         if Input.UserInputType == Enum.UserInputType.MouseButton1 or
            Input.UserInputType == Enum.UserInputType.Touch then
+
             StartDrag(Input)
         end
     end)
@@ -295,21 +345,50 @@ local function CreateDragZone(Name, Position, Size)
     return Zone
 end
 
-CreateDragZone("DragTop", UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 5))
-CreateDragZone("DragBottom", UDim2.new(0, 0, 1, -5), UDim2.new(1, 0, 0, 5))
-CreateDragZone("DragLeft", UDim2.new(0, 0, 0, 0), UDim2.new(0, 5, 1, 0))
-CreateDragZone("DragRight", UDim2.new(1, -5, 0, 0), UDim2.new(0, 5, 1, 0))
+CreateDragZone(
+    "DragTop",
+    UDim2.new(0, 0, 0, 0),
+    UDim2.new(1, 0, 0, 5)
+)
+
+CreateDragZone(
+    "DragBottom",
+    UDim2.new(0, 0, 1, -5),
+    UDim2.new(1, 0, 0, 5)
+)
+
+CreateDragZone(
+    "DragLeft",
+    UDim2.new(0, 0, 0, 0),
+    UDim2.new(0, 5, 1, 0)
+)
+
+CreateDragZone(
+    "DragRight",
+    UDim2.new(1, -5, 0, 0),
+    UDim2.new(0, 5, 1, 0)
+)
 
 Services.UserInputService.InputChanged:Connect(function(Input)
     if not Dragging then return end
+
     if Input.UserInputType == Enum.UserInputType.Touch then
-        if ActiveTouch and Input ~= ActiveTouch then return end
+        if ActiveTouch and Input ~= ActiveTouch then
+            return
+        end
     end
-    if not DragStart or not StartPosition then return end
+
+    if not DragStart or not StartPosition then
+        return
+    end
+
     if Input.UserInputType ~= Enum.UserInputType.MouseMovement and
-       Input.UserInputType ~= Enum.UserInputType.Touch then return end
+       Input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
 
     local Delta = Input.Position - DragStart
+
     Main.Position = UDim2.new(
         StartPosition.X.Scale,
         StartPosition.X.Offset + Delta.X,
@@ -320,13 +399,18 @@ end)
 
 Services.UserInputService.InputEnded:Connect(function(Input)
     if Input.UserInputType == Enum.UserInputType.Touch then
+
         if ActiveTouch and Input == ActiveTouch then
             StopDrag()
         end
+
         return
     end
+
     if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if Dragging then StopDrag() end
+        if Dragging then
+            StopDrag()
+        end
     end
 end)
 
@@ -340,9 +424,11 @@ local ToggleActiveTouch = nil
 
 local function StartToggleDrag(Input)
     if ToggleDragging then return end
+
     if Input.UserInputType == Enum.UserInputType.Touch then
         ToggleActiveTouch = Input
     end
+
     ToggleDragging = true
     ToggleDragStart = Input.Position
     ToggleStartPos = Toggle.Position
@@ -358,20 +444,31 @@ end
 Toggle.InputBegan:Connect(function(Input)
     if Input.UserInputType == Enum.UserInputType.MouseButton1 or
        Input.UserInputType == Enum.UserInputType.Touch then
+
         StartToggleDrag(Input)
     end
 end)
 
 Services.UserInputService.InputChanged:Connect(function(Input)
     if not ToggleDragging then return end
+
     if Input.UserInputType == Enum.UserInputType.Touch then
-        if ToggleActiveTouch and Input ~= ToggleActiveTouch then return end
+        if ToggleActiveTouch and Input ~= ToggleActiveTouch then
+            return
+        end
     end
-    if not ToggleDragStart or not ToggleStartPos then return end
+
+    if not ToggleDragStart or not ToggleStartPos then
+        return
+    end
+
     if Input.UserInputType ~= Enum.UserInputType.MouseMovement and
-       Input.UserInputType ~= Enum.UserInputType.Touch then return end
+       Input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
 
     local Delta = Input.Position - ToggleDragStart
+
     Toggle.Position = UDim2.new(
         ToggleStartPos.X.Scale,
         ToggleStartPos.X.Offset + Delta.X,
@@ -382,13 +479,18 @@ end)
 
 Services.UserInputService.InputEnded:Connect(function(Input)
     if Input.UserInputType == Enum.UserInputType.Touch then
+
         if ToggleActiveTouch and Input == ToggleActiveTouch then
             StopToggleDrag()
         end
+
         return
     end
+
     if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if ToggleDragging then StopToggleDrag() end
+        if ToggleDragging then
+            StopToggleDrag()
+        end
     end
 end)
 
@@ -399,15 +501,34 @@ local isUIVisible = true
 
 Toggle.MouseButton1Click:Connect(function()
     isUIVisible = not isUIVisible
+
     ScreenGui.Enabled = isUIVisible
 
-    Services.TweenService:Create(Toggle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 45, 0, 45)
-    }):Play()
+    Services.TweenService:Create(
+        Toggle,
+        TweenInfo.new(
+            0.1,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            Size = UDim2.new(0, 45, 0, 45)
+        }
+    ):Play()
+
     task.wait(0.1)
-    Services.TweenService:Create(Toggle, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 55, 0, 55)
-    }):Play()
+
+    Services.TweenService:Create(
+        Toggle,
+        TweenInfo.new(
+            0.1,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            Size = UDim2.new(0, 55, 0, 55)
+        }
+    ):Play()
 end)
 
 print("✅ UI Loaded")
