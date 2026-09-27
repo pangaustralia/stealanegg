@@ -568,23 +568,57 @@ end
 -- ==================================================
 -- REMOTES
 -- ==================================================
+local function DumpRemoteResult(value)
+    if typeof(value) == "table" then
+        local parts = {}
+        for key, val in pairs(value) do
+            parts[#parts + 1] = tostring(key) .. "=" .. tostring(val)
+        end
+        table.sort(parts)
+        return "{" .. table.concat(parts, ", ") .. "}"
+    end
+    return tostring(value)
+end
+
 local function RemoteCollectFirst()
-    if not CollectEvent or not State.FirstEggSlotKey or not State.FirstEggUid then return false end
-    local success = pcall(function()
+    if not CollectEvent or not State.FirstEggSlotKey or not State.FirstEggUid then
+        warn("[YOKUDO][FIRST] Missing CollectEvent, SlotKey, or Uid")
+        return false
+    end
+
+    local ok, result = pcall(function()
         return CollectEvent:InvokeServer({
             FirstAreaSlotKey = State.FirstEggSlotKey,
             Uid = State.FirstEggUid
         })
     end)
-    return success
+
+    if not ok then
+        warn("[YOKUDO][FIRST] Remote error: " .. tostring(result))
+        return false
+    end
+
+    print("[YOKUDO][FIRST] Server response: " .. DumpRemoteResult(result))
+    return result
 end
 
 local function RemoteCollectTarget()
-    if not CollectEvent or not State.TargetUid then return false end
-    local success = pcall(function()
+    if not CollectEvent or not State.TargetUid then
+        warn("[YOKUDO][TARGET] Missing CollectEvent or TargetUid")
+        return false
+    end
+
+    local ok, result = pcall(function()
         return CollectEvent:InvokeServer({ Uid = State.TargetUid })
     end)
-    return success
+
+    if not ok then
+        warn("[YOKUDO][TARGET] Remote error: " .. tostring(result))
+        return false
+    end
+
+    print("[YOKUDO][TARGET] Server response: " .. DumpRemoteResult(result))
+    return result
 end
 
 local function FireForestStrike()
