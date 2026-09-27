@@ -12,6 +12,12 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+-- ==================================================
+-- DEBUG START TEST
+-- ==================================================
+warn("[YOKUDO TEST] TeleportSystem_debugged loaded")
+print("[YOKUDO TEST] Debug output is working")
+
 local Player = Players.LocalPlayer
 local Container = workspace:WaitForChild("AreaEggSlotsClient")
 
